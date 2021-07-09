@@ -24,7 +24,7 @@ from bs4 import BeautifulSoup
 from js2py import EvalJs
 from lk21.extractors.bypasser import Bypass
 from base64 import standard_b64encode
-
+from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 
 
@@ -32,6 +32,8 @@ def direct_link_generator(link: str):
     """ direct links generator """
     if not link:
         raise DirectDownloadLinkException("`No links found!`")
+    elif 'youtube.com' in link or 'youtu.be' in link:
+        raise DirectDownloadLinkException(f"Use /{BotCommands.WatchCommand} to mirror Youtube link\nUse /{BotCommands.TarWatchCommand} to make tar of Youtube playlist")
     elif 'zippyshare.com' in link:
         return zippy_share(link)
     elif 'yadi.sk' in link:
@@ -46,23 +48,47 @@ def direct_link_generator(link: str):
         return osdn(link)
     elif 'github.com' in link:
         return github(link)
-    elif 'racaty.net' in link:
-        return racaty(link)
     elif 'hxfile.co' in link:
         return hxfile(link)
     elif 'anonfiles.com' in link:
         return anon(link)
+    elif 'letsupload.io' in link:
+        return letsupload(link)
+    elif 'fembed.net' in link:
+        return fembed(link)
+    elif 'fembed.com' in link:
+        return fembed(link)
     elif 'femax20.com' in link:
-        return femax20(link)
+        return fembed(link)
+    elif 'fcdn.stream' in link:
+        return fembed(link)
+    elif 'feurl.com' in link:
+        return fembed(link)
+    elif 'naniplay.nanime.in' in link:
+        return fembed(link)
+    elif 'naniplay.nanime.biz' in link:
+        return fembed(link)
+    elif 'naniplay.com' in link:
+        return fembed(link)
     elif 'layarkacaxxi.icu' in link:
-        return layarkacaxxi(link)
+        return fembed(link)
+    elif 'sbembed.com' in link:
+        return sbembed(link)
+    elif 'streamsb.net' in link:
+        return sbembed(link)
+    elif 'sbplay.org' in link:
+        return sbembed(link)
     elif '1drv.ms' in link:
         return onedrive(link)
+    elif 'pixeldrain.com' in link:
+        return pixeldrain(link)
     else:
         raise DirectDownloadLinkException(f'No Direct link function found for {link}')
 
 
 def zippy_share(url: str) -> str:
+    """ ZippyShare direct links generator
+    Based on https://github.com/KenHV/Mirror-Bot """
     link = re.findall("https:/.(.*?).zippyshare", url)[0]
     response_content = (requests.get(url)).content
     bs_obj = BeautifulSoup(response_content, "lxml")
@@ -191,24 +217,6 @@ def github(url: str) -> str:
         raise DirectDownloadLinkException("`Error: Can't extract the link`\n")
 
 
-def racaty(url: str) -> str:
-    """ Racaty direct links generator
-    based on https://github.com/breakdowns/slam-mirrorbot """
-    dl_url = ''
-    try:
-        link = re.findall(r'\bhttps?://.*racaty\.net\S+', url)[0]
-    except IndexError:
-        raise DirectDownloadLinkException("`No Racaty links found`\n")
-    reqs=requests.get(link)
-    bss=BeautifulSoup(reqs.text,'html.parser')
-    op=bss.find('input',{'name':'op'})['value']
-    id=bss.find('input',{'name':'id'})['value']
-    rep=requests.post(link,data={'op':op,'id':id})
-    bss2=BeautifulSoup(rep.text,'html.parser')
-    dl_url=bss2.find('a',{'id':'uniqueExpirylink'})['href']
-    return dl_url
-
-
 def hxfile(url: str) -> str:
     """ Hxfile direct links generator
     based on https://github.com/breakdowns/slam-mirrorbot """
@@ -235,14 +243,22 @@ def anon(url: str) -> str:
     return dl_url
 
 
-def femax20(url: str) -> str:
-    """ Fembed direct links generator
-    based on https://github.com/breakdowns/slam-mirrorbot """
+def letsupload(url: str) -> str:
+    """ Letsupload direct link generator
+    Based on https://github.com/breakdowns/slam-mirrorbot """
     dl_url = ''
     try:
-        link = re.findall(r'\bhttps?://.*femax20\.com\S+', url)[0]
+        link = re.findall(r'\bhttps?://.*letsupload\.io\S+', url)[0]
     except IndexError:
-        raise DirectDownloadLinkException("`No Fembed links found`\n")
+        raise DirectDownloadLinkException("`No Letsupload links found`\n")
+    bypasser = lk21.Bypass()
+    dl_url=bypasser.bypass_url(link)
+    return dl_url
+
+
+def fembed(link: str) -> str:
+    """ Fembed direct link generator
+    Based on https://github.com/breakdowns/slam-mirrorbot """
     bypasser = lk21.Bypass()
     dl_url=bypasser.bypass_fembed(link)
     lst_link = []
@@ -252,16 +268,11 @@ def femax20(url: str) -> str:
     return lst_link[count-1]
 
 
-def layarkacaxxi(url: str) -> str:
-    """ Fembed direct links generator
-    based on https://github.com/breakdowns/slam-mirrorbot """
-    dl_url = ''
-    try:
-        link = re.findall(r'\bhttps?://.*layarkacaxxi\.icu\S+', url)[0]
-    except IndexError:
-        raise DirectDownloadLinkException("No Fembed links found\n")
+def sbembed(link: str) -> str:
+    """ Sbembed direct link generator
+    Based on https://github.com/breakdowns/slam-mirrorbot """
     bypasser = lk21.Bypass()
-    dl_url=bypasser.bypass_fembed(link)
+    dl_url=bypasser.bypass_sbembed(link)
     lst_link = []
     count = len(dl_url)
     for i in dl_url:
@@ -282,6 +293,19 @@ def onedrive(link: str) -> str:
     file_name = dl_link.rsplit("/", 1)[1]
     resp2 = requests.head(dl_link)
     return dl_link
+
+
+def pixeldrain(url: str) -> str:
+    """ Based on https://github.com/yash-dk/TorToolkit-Telegram """
+    url = url.strip("/ ")
+    file_id = url.split("/")[-1]
+    info_link = f"https://pixeldrain.com/api/file/{file_id}/info"
+    dl_link = f"https://pixeldrain.com/api/file/{file_id}"
+    resp = requests.get(info_link).json()
+    if resp["success"]:
+        return dl_link
+    else:
+        raise DirectDownloadLinkException("ERROR: Cant't download due {}.".format(resp.text["value"]))
 
 
 def useragent():
